@@ -1,0 +1,9 @@
+dependencies:
+- name: "loki"
+  condition: loki.enabled
+  repository: "https://grafana.github.io/helm-charts"
+  version: "^2.3.0"
+- name: "fluent-bit"
+  condition: fluent-bit.enabled
+  repository: "https://grafana.github.io/helm-charts"
+  version: "^2.2.0"

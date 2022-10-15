@@ -1,0 +1,58 @@
+loki:
+  enabled: true
+  isDefault: true
+  service:
+    type: NodePort
+    nodePort: 31010
+  config:
+    limits_config:
+      reject_old_samples_max_age: 168h
+    chunk_store_config:
+      max_look_back_period: 336h
+    table_manager:
+      retention_deletes_enabled: true
+      retention_period: 336h           #время хранения логов
+  nodeSelector:
+    kubernetes.io/hostname: nodename   #имя ноды мониторинга
+
+promtail:
+  enabled: false
+
+fluent-bit:
+  enabled: true
+  resources:
+    limits:
+      memory: 200Mi
+      cpu: 200m
+    requests:
+      cpu: 100m
+      memory: 100Mi
+  config:
+    k8sLoggingParser: "On"
+    memBufLimit: "50MB"
+#    bufChunkSize: "128k"
+#    bufMaxSize: "256k"
+    loglevel: warn
+    removeKeys:
+      - kubernetes
+      - annotations
+      - labels
+      - stream
+
+grafana:
+  enabled: false
+  sidecar:
+    datasources:
+      enabled: true
+  image:
+    tag: 8.3.5
+
+prometheus:
+  enabled: false
+  isDefault: false
+
+filebeat:
+  enabled: false
+
+logstash:
+  enabled: false

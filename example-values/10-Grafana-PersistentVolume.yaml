@@ -1,0 +1,52 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: monitor-stack-grafana
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: monitor-stack-grafana
+    app.kubernetes.io/storage: monitor-stack-grafana
+spec:
+  capacity:
+    storage: "10Gi" 
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/data/monitor-stack/grafana        #изменить по необходимости, путь на ноде мониторинга
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+              - nodename    #имя ноды мониторинга
+
+---
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: monitor-stack-grafana
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: grafana
+    app.kubernetes.io/instance: monitor-stack-grafana
+    app.kubernetes.io/storage: monitor-stack-grafana
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: "10Gi"
+  selector:
+    matchExpressions:
+      - key: app.kubernetes.io/storage
+        operator: In
+        values:
+          - monitor-stack-grafana
+  storageClassName: local-storage

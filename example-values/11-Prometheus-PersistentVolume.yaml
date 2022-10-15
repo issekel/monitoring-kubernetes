@@ -1,0 +1,28 @@
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: monitor-stack-prometheus
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/name: prometheus
+    app.kubernetes.io/instance: monitor-stack-prometheus
+    app.kubernetes.io/storage: monitor-stack-prometheus
+spec:
+  capacity:
+    storage: "100Gi"   #изменить на усмотрение
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /mnt/data/monitor-stack/prometheus     #изменить по необходимости, путь на ноде мониторинга
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+          - key: kubernetes.io/hostname
+            operator: In
+            values:
+              - nodename            #имя ноды мониторинга
