@@ -19,27 +19,21 @@ data:
         Log_Level      {{ .Values.config.loglevel }}
         Parsers_File   parsers.conf
     [INPUT]
-        Name           tail
-        Tag            kube.*
-        Path           /var/log/containers/*.log
-        Parser         kube
-        DB             /run/fluent-bit/flb_kube.db
-        Mem_Buf_Limit  {{ .Values.config.memBufLimit }}
-        Skip_Long_Lines   On
-        Refresh_Interval  10        
+        Name              tail
+        Tag               kube.*
+        Path              /var/log/containers/*.log
+        Parser            docker
+        DB                /run/fluent-bit/flb_kube.db
+        Mem_Buf_Limit     {{ .Values.config.memBufLimit }}
+        Buffer_Chunk_size {{ .Values.config.bufChunkSize }}
+        Buffer_Max_size   {{ .Values.config.bufMaxSize }}
     [FILTER]
         Name           kubernetes
         Match          kube.*
         Kube_URL       https://kubernetes.default.svc:443
-        Merge_Log      On
-        annotations    Off
-        labels         Off
+        Merge_Log On
         K8S-Logging.Exclude {{ .Values.config.k8sLoggingExclude }}
         K8S-Logging.Parser {{ .Values.config.k8sLoggingParser }}
-    [FILTER]
-        Name               record_modifier
-        Match              *        
-        RemoveKeys         kubernetes
     [Output]
         Name grafana-loki
         Match *
@@ -52,8 +46,8 @@ data:
         BatchWait {{ .Values.config.batchWait }}
         BatchSize {{ int .Values.config.batchSize }}
         Labels {{ .Values.config.labels }}
-        AutoKubernetesLabels {{ .Values.config.autoKubernetesLabels }}
         RemoveKeys {{ include "helm-toolkit.utils.joinListWithComma" .Values.config.removeKeys }}
+        AutoKubernetesLabels {{ .Values.config.autoKubernetesLabels }}
         LabelMapPath /fluent-bit/etc/labelmap.json
         LineFormat {{ .Values.config.lineFormat }}
         LogLevel {{ .Values.config.loglevel }}
@@ -65,9 +59,10 @@ data:
     {{- end }}
   parsers.conf: |-
     [PARSER]
-        Name    kube
-        Format  regex
-        Regex   (?<tag>[^.]+)?\.?(?<pod_name>[a-z0-9](?:[-a-z0-9]*[a-z0-9])?(?:\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*)_(?<namespace_name>[^_]+)_(?<container_name>.+)-(?<docker_id>[a-z0-9]{64})\.log$            
+        Name        docker
+        Format      json
+        Time_Key    time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L
     {{- range $parser:= .Values.config.parsers }}
     [PARSER]
     {{- range $key,$value := $parser }}

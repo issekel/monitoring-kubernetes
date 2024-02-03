@@ -1,6 +1,6 @@
 image:
   repository: grafana/loki
-  tag: 2.4.2
+  tag: 2.7.0
   pullPolicy: IfNotPresent
 
   ## Optionally specify an array of imagePullSecrets.
@@ -49,6 +49,12 @@ tracing:
 config:
   # existingSecret:
   auth_enabled: false
+
+  memberlist:
+    join_members:
+      # the value must be defined as string to be evaluated when secret manifest is being generating
+      - '{{ include "loki.fullname" . }}-memberlist'
+
   ingester:
     chunk_idle_period: 3m
     chunk_block_size: 262144
@@ -58,8 +64,6 @@ config:
       dir: /data/loki/wal
     lifecycler:
       ring:
-        kvstore:
-          store: inmemory
         replication_factor: 1
 
       ## Different ring configs can be used. E.g. Consul
@@ -74,7 +78,8 @@ config:
   limits_config:
     enforce_metric_name: false
     reject_old_samples: true
-    reject_old_samples_max_age: 336h
+    reject_old_samples_max_age: 168h
+    max_entries_limit_per_query: 20971520
   schema_config:
     configs:
     - from: 2020-10-24
@@ -86,6 +91,9 @@ config:
         period: 24h
   server:
     http_listen_port: 3100
+    grpc_listen_port: 9095
+    grpc_server_max_recv_msg_size: 20971520
+    grpc_server_max_send_msg_size: 20971520
   storage_config:
     boltdb_shipper:
       active_index_directory: /data/loki/boltdb-shipper-active
@@ -120,6 +128,8 @@ config:
 extraArgs: {}
   # log.level: debug
 
+extraEnvFrom: []
+
 livenessProbe:
   httpGet:
     path: /ready
@@ -142,16 +152,18 @@ nodeSelector: {}
 ## - create a pv which above 10Gi and has same namespace with loki
 ## - keep storageClassName same with below setting
 persistence:
-  enabled: true
+  enabled: false
   accessModes:
   - ReadWriteOnce
-  size: 5Gi
+  size: 10Gi
+  labels: {}
   annotations: {}
-  selector:
-    matchLabels:
-      app.kubernetes.io/name: loki
-  subPath: ""
-  existingClaim: loki
+  # selector:
+  #   matchLabels:
+  #     app.kubernetes.io/name: loki
+  # subPath: ""
+  # existingClaim:
+  # storageClassName:
 
 ## Pod Labels
 podLabels: {}
@@ -192,8 +204,11 @@ securityContext:
   runAsNonRoot: true
   runAsUser: 10001
 
+containerSecurityContext:
+  readOnlyRootFilesystem: true
+
 service:
-  type: NodePort
+  type: ClusterIP
   nodePort:
   port: 3100
   annotations: {}
@@ -212,6 +227,11 @@ terminationGracePeriodSeconds: 4800
 ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
 tolerations: []
 
+## Topology spread constraint for multi-zone clusters
+## ref: https://kubernetes.io/docs/concepts/workloads/pods/pod-topology-spread-constraints/
+topologySpreadConstraints:
+  enabled: false
+
 # The values to set in the PodDisruptionBudget spec
 # If not set then a PodDisruptionBudget will not be created
 podDisruptionBudget: {}
@@ -228,6 +248,8 @@ serviceMonitor:
   annotations: {}
   # scrapeTimeout: 10s
   # path: /metrics
+  scheme: null
+  tlsConfig: {}
   prometheusRule:
     enabled: false
     additionalLabels: {}
@@ -311,7 +333,7 @@ extraPorts: []
 env: []
 
 # Specify Loki Alerting rules based on this documentation: https://grafana.com/docs/loki/latest/rules/
-# When specified, you also need to add a ruler config section above. An example is shown in the alerting docs.
+# When specified, you also need to add a ruler config section above. An example is shown in the rules docs.
 alerting_groups: []
 #  - name: example
 #    rules:

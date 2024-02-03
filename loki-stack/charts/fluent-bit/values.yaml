@@ -11,27 +11,16 @@ config:
   tenantID: '""'
   batchWait: 1
   batchSize: 1048576
-  loglevel: info
+  loglevel: warn
   lineFormat: json
   k8sLoggingExclude: "Off"
-  k8sLoggingParser: "On"
-  memBufLimit: "25MB"
+  k8sLoggingParser: "Off"
+  memBufLimit: "5MB"
+  bufChunkSize: "32k"
+  bufMaxSize: "32k"
   removeKeys:
     - kubernetes
-    - annotations
-    - labels
     - stream
-#   - kubernetes_container_hash
-#   - kubernetes_host
-#   - kubernetes_pod_id
-#   - kubernetes_docker_id
-#   - kubernetes_labels_app_kubernetes_io_instance
-#   - kubernetes_labels_app_kubernetes_io_name
-#   - kubernetes_labels_pod_template_hash
-#   - kubernetes_labels_service
-#   - kubernetes_pod_id
-#   - kubernetes_namespace_name
-
   autoKubernetesLabels: false
   labels: '{job="fluent-bit"}'
   labelMap:
@@ -40,10 +29,10 @@ config:
       labels:
         app: app
         release: release
-      host: node
+  #    host: node
       container_name: container
       pod_name: instance
-#    stream: stream
+  #  stream: stream
   # parsers: # Allow to define custom parsers. The key here is the same as the one in the [PARSER] section of parsers.conf file.
   #  - Name: json
   #    Format: json
@@ -59,11 +48,13 @@ affinity: {}
 
 annotations: {}
 
+automountServiceAccountToken: true
+
 deploymentStrategy: RollingUpdate
 
 image:
   repository: grafana/fluent-bit-plugin-loki
-  tag: 2.4.2-amd64
+  tag: 2.8.2-amd64
   pullPolicy: IfNotPresent
   ## Optionally specify an array of imagePullSecrets.
   ## Secrets must be present in the namespace.
@@ -102,6 +93,11 @@ resources:
 serviceAccount:
   create: true
   name:
+
+
+podSecurityContext: {}
+
+securityContext: {}
 
 ## Tolerations for pod assignment
 ## ref: https://kubernetes.io/docs/concepts/configuration/taint-and-toleration/
